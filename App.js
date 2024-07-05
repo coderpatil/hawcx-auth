@@ -1,21 +1,59 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import 'react-native-gesture-handler';
+import 'react-native-screens';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { firebase } from './config';
+
+import Login from './src/Login';
+import Dashboard from './src/Dashboard';
+import Registration from './src/Registration';
+import Header from './components/Header';
+
+const Stack = createStackNavigator();
+
+function App() {
+  
+    const [initializing, setInitializing] = useState(true);
+    const [user, setUser] = useState(null);
+
+    function onAuthStateChanged(user) {
+        setUser(user);
+        if (initializing) setInitializing(false);
+    }
+
+    useEffect(() => {
+      const subscriber = firebase.auth().onAuthStateChanged(user => {
+        console.log("Auth state changed: ", user);
+        onAuthStateChanged(user);
+      });
+      return () => subscriber(); // this is the cleanup, unsubscribing on unmount
+    }, []);
+
+    if (initializing) return null;
+
+    return (
+        <SafeAreaProvider>
+            <Stack.Navigator>
+                {user ? (
+                    <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerTitle: () => <Header name="Hawcx Dashboard"/>, headerStyle: { height: 150, backgroundColor: '#00e4d0', shadowColor: '#000', elevation: 25 } }} />
+
+                ) : (
+                    <>
+                        <Stack.Screen name="Login" component={Login} options={{ headerTitle: () => <Header name="Hawcx"/>, headerStyle: { height: 150, backgroundColor: '#00e4d0', shadowColor: '#000', elevation: 25 } }} />
+                        <Stack.Screen name="Registration" component={Registration} options={{ headerTitle: () => <Header name="Hawcx"/>, headerStyle: { height: 150, backgroundColor: '#00e4d0', shadowColor: '#000', elevation: 25 } }} />
+                    </>
+                )}
+            </Stack.Navigator>
+        </SafeAreaProvider>
+    );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default () => (
+    <NavigationContainer>
+        <App/>
+    </NavigationContainer>
+);
+
